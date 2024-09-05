@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.chordbot;
 
 public class Constants {
     public static final String CHAT_STATES = "";

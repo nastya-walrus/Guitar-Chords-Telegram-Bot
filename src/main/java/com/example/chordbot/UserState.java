@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.chordbot;
 
 public enum UserState {
     AWAITING_SONG,

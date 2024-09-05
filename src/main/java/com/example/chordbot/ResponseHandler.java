@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.chordbot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +9,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.util.Map;
 
-import static com.example.demo.Constants.START_TEXT;
-import static com.example.demo.UserState.AWAITING_SONG;
+import static com.example.chordbot.Constants.START_TEXT;
+import static com.example.chordbot.UserState.AWAITING_SONG;
 
 public class ResponseHandler {
     private static final Logger logger = LoggerFactory.getLogger(ResponseHandler.class);
