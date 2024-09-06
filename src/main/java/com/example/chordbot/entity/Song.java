@@ -10,7 +10,6 @@ import lombok.*;
 @Getter
 @Setter
 @EqualsAndHashCode
-@ToString(of = {"id", "name", "text"})
 @NoArgsConstructor
 public class Song {
 
@@ -26,5 +25,14 @@ public class Song {
     public Song(String name, String text) {
         this.name = name;
         this.text = text;
+    }
+
+    @Override
+    public String toString() {
+        return "Song{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", text='" + text.substring(0, 50).replaceAll("\n", " ") + '\'' +
+                '}';
     }
 }
