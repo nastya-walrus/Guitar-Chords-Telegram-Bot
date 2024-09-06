@@ -72,21 +72,25 @@ public class DataBaseInitializationConfiguration {
     @Bean
     CommandLineRunner initSongDatabase(SongRepository songRepository) {
         return args -> {
-            List<Song> song = List.of(
+            List<Song> songs = List.of(
                     new Song("Алюминиевые огурцы", testText),
                     new Song("Восьмиклассница", testText),
                     new Song("Пачка сигарет", testText)
             );
+            songRepository.saveAll(songs);
+            songRepository.findAll().forEach(song -> log.info("Preloaded " + song));
         };
     }
 
     @Bean
     CommandLineRunner initMusicianDatabase(MusicianRepository musicianRepository) {
         return args -> {
-            List<Musician> musician = List.of(
+            List<Musician> musicians = List.of(
                     new Musician("Кино"),
                     new Musician("Найк Борзов")
             );
+            musicianRepository.saveAll(musicians);
+            musicianRepository.findAll().forEach(musician -> log.info("Preloaded " + musician));
         };
     }
 
