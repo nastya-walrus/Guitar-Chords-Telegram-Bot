@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ class SongRepositoryTest {
         String name = "Алюминиевые огурцы";
         Song song = songRepository.save(new Song(name, "бла-бла-бла"));
 
-        List<Song> foundSongs = songRepository.findByNameContainingIgnoreCase(name);
+        List<Song> foundSongs = songRepository.findByNameContainingIgnoreCase(name, PageRequest.of(0, 10));
 
         // 1 var
         assertEquals(List.of(song), foundSongs);
@@ -53,10 +54,51 @@ class SongRepositoryTest {
         Song secondSong = songRepository.save(new Song(nameSecondSong, ""));
         Song thirdSong = songRepository.save(new Song(nameThirdSong, ""));
 
-        List<Song> foundSongs = songRepository.findByNameContainingIgnoreCase("три");
+        List<Song> foundSongs = songRepository.findByNameContainingIgnoreCase("три", PageRequest.of(0, 10));
 
         assertThat(foundSongs).containsExactlyInAnyOrder(firstSong, secondSong)
                 .doesNotContain(thirdSong);
+    }
+
+    @Test
+    void findByNameContainingIgnoreCase_withPaging() {
+        String nameContains = "три";
+
+        List<String> fullSongNames = List.of(
+                "Три счастливых дня",
+                "Три сестры",
+                "Три трупа на обочине",
+                "Три слова",
+                "Тридцать три коровы",
+                "Три окна",
+                "У России три пути",
+                "Три белых коня",
+                "Три полоски",
+                "Океан и три реки"
+        );
+
+        songRepository.saveAll(fullSongNames.stream()
+                .map(t -> new Song(t, ""))
+                .toList()
+        );
+
+
+        List<Song> foundSongsOnZeroPage = songRepository.findByNameContainingIgnoreCase(
+                nameContains, PageRequest.of(0, 10)
+        );
+
+        assertEquals(10, foundSongsOnZeroPage.size());
+        assertEquals(fullSongNames.get(0), foundSongsOnZeroPage.get(0).getName());
+        assertEquals(fullSongNames.get(1), foundSongsOnZeroPage.get(1).getName());
+        assertEquals(fullSongNames.get(2), foundSongsOnZeroPage.get(2).getName());
+        assertEquals(fullSongNames.get(3), foundSongsOnZeroPage.get(3).getName());
+        assertEquals(fullSongNames.get(4), foundSongsOnZeroPage.get(4).getName());
+        assertEquals(fullSongNames.get(5), foundSongsOnZeroPage.get(5).getName());
+        assertEquals(fullSongNames.get(6), foundSongsOnZeroPage.get(6).getName());
+        assertEquals(fullSongNames.get(7), foundSongsOnZeroPage.get(7).getName());
+        assertEquals(fullSongNames.get(8), foundSongsOnZeroPage.get(8).getName());
+        assertEquals(fullSongNames.get(9), foundSongsOnZeroPage.get(9).getName());
+
     }
 
 }
