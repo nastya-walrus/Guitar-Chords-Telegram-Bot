@@ -12,11 +12,8 @@ import org.telegram.abilitybots.api.objects.Reply;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import static com.example.chordbot.Constants.SECOND_START_TEXT;
-import static com.example.chordbot.Constants.START_TEXT;
 import static com.example.chordbot.UserState.AWAITING_SEARCH_REQUEST;
 import static org.telegram.abilitybots.api.objects.Locality.USER;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
@@ -26,13 +23,19 @@ import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 @Component
 public class ChordsBot extends AbilityBot {
 
-    private final Map<Long, UserState> chatStates = new HashMap<>();
+    /**
+     * Хранит текущие статусы активных чатов
+     * <p> <p>
+     * Ключ - chatId, идентификатор чата
+     * Значение - статус чата из enum UserState
+     */
+    private final Map<Long, UserState> chatStates;
     private final SendMessageService sendMessageService;
 
     @Autowired
     public ChordsBot(Environment env, SendMessageService sendMessageService) {
         super(env.getProperty("botToken"), "chords_for_songs_bot");
-//        chatStates = db.getMap(Constants.CHAT_STATES);
+        chatStates = db.getMap(Constants.CHAT_STATES);
         this.sendMessageService = sendMessageService;
     }
 
@@ -45,10 +48,9 @@ public class ChordsBot extends AbilityBot {
         return Ability
                 .builder()
                 .name("start")
-                .info(Constants.START_DESCRIPTION)
                 .locality(USER)
                 .privacy(PUBLIC)
-                .action(ctx -> replyToStart(ctx.chatId()))
+                .action(sendMessageService::replyToStart)
                 .build();
     }
 
@@ -56,7 +58,6 @@ public class ChordsBot extends AbilityBot {
         return Ability
                 .builder()
                 .name("hui")
-                .info(Constants.START_DESCRIPTION)
                 .locality(USER)
                 .privacy(PUBLIC)
                 .action(ctx -> {
@@ -69,23 +70,8 @@ public class ChordsBot extends AbilityBot {
     }
 
 
-    public void replyToStart(long chatId) {
-        silent.execute(
-                SendMessage
-                        .builder()
-                        .chatId(chatId)
-                        .text(START_TEXT)
-                        .build()
-        );
-        silent.execute(
-                SendMessage
-                        .builder()
-                        .chatId(chatId)
-                        .text(SECOND_START_TEXT)
-                        .build()
-        );
-
-        chatStates.put(chatId, AWAITING_SEARCH_REQUEST);
+    public void setChatState(Long chatId, UserState userState) {
+        chatStates.put(chatId, userState);
     }
 
 
@@ -94,8 +80,8 @@ public class ChordsBot extends AbilityBot {
                 (abilityBot, upd1) -> sendMessageService.sendMessageToSearchRequest((ChordsBot) abilityBot, upd1),
 
                 Flag.TEXT,
-                upd -> chatIsActive(getChatId(upd)),
-                upd -> chatStates.get(getChatId(upd)).equals(AWAITING_SEARCH_REQUEST)
+                update -> !update.getMessage().getText().startsWith("/"),
+                this::readyToSearch
         );
     }
 
@@ -117,5 +103,10 @@ public class ChordsBot extends AbilityBot {
 
     public boolean chatIsActive(Long chatId) {
         return chatStates.containsKey(chatId);
+    }
+
+    public boolean readyToSearch(Update upd) {
+        Long chatId = getChatId(upd);
+        return !chatIsActive(chatId) || chatStates.get(chatId) == AWAITING_SEARCH_REQUEST;
     }
 }
