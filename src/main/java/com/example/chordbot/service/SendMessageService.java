@@ -52,7 +52,7 @@ public class SendMessageService {
                             .build()
             );
 
-            ((ChordsBot) bot).setChatState(chatId, AWAITING_SEARCH_REQUEST);
+            ((ChordsBot) bot).getChatStates().setChatState(chatId, AWAITING_SEARCH_REQUEST);
         }
     }
 
@@ -97,7 +97,7 @@ public class SendMessageService {
                             .build()
             );
 
-            abilityBot.clearChatState(chatId);
+            abilityBot.getChatStates().clearChatState(chatId);
         }
     }
 
