@@ -9,7 +9,7 @@ public class ChatStatesHolder<V> {
      * Хранит текущие статусы активных чатов
      * <p> <p>
      * Ключ - chatId, идентификатор чата
-     * Значение - статус чата из enum UserState
+     * Значение - статус чата, generic
      */
     private final Map<Long, V> chatStates;
 
