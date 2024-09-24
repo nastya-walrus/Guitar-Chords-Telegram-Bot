@@ -1,9 +1,8 @@
 package com.example.chordbot;
 
-import com.example.chordbot.service.SendMessageService;
-import com.example.chordbot.utils.ChatStatesHolder;
-import lombok.Getter;
-import lombok.extern.java.Log;
+import com.example.chordbot.service.MessageService;
+import com.example.chordbot.service.TelegramSendMessageService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -14,24 +13,23 @@ import org.telegram.abilitybots.api.objects.Reply;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import static com.example.chordbot.UserState.AWAITING_SEARCH_REQUEST;
 import static org.telegram.abilitybots.api.objects.Locality.USER;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
-@Log
+@Slf4j
 @Component
 public class ChordsBot extends AbilityBot {
 
-    @Getter
-    private final ChatStatesHolder<UserState> chatStates;
-    private final SendMessageService sendMessageService;
+    private final TelegramSendMessageService telegramSendMessageService;
+    private final MessageService messageService;
 
     @Autowired
-    public ChordsBot(Environment env, SendMessageService sendMessageService) {
+    public ChordsBot(Environment env, TelegramSendMessageService telegramSendMessageService,
+                     MessageService messageService) {
         super(env.getProperty("botToken"), "chords_for_songs_bot");
-        chatStates = new ChatStatesHolder<>(db.getMap(Constants.CHAT_STATES));
-        this.sendMessageService = sendMessageService;
+        this.messageService = messageService;
+        this.telegramSendMessageService = telegramSendMessageService;
     }
 
     @Override
@@ -45,7 +43,11 @@ public class ChordsBot extends AbilityBot {
                 .name("start")
                 .locality(USER)
                 .privacy(PUBLIC)
-                .action(sendMessageService::replyToStart)
+                .action(ctx -> telegramSendMessageService.sendAllMessages(
+                        ctx.bot(),
+                        ctx.update(),
+                        () -> messageService.startMessages(ctx.chatId()))
+                )
                 .build();
     }
 
@@ -67,17 +69,24 @@ public class ChordsBot extends AbilityBot {
 
     public Reply replyToSearchRequest() {
         return Reply.of(
-                (abilityBot, upd1) -> sendMessageService.sendMessageToSearchRequest((ChordsBot) abilityBot, upd1),
+                (abilityBot, upd) -> telegramSendMessageService.sendAllMessages(
+                        abilityBot,
+                        upd,
+                        () -> messageService.searchSongMessages(getChatId(upd), upd.getMessage().getText())),
 
                 Flag.TEXT,
                 update -> !update.getMessage().getText().startsWith("/"),
-                this::readyToSearch
+                messageService::readyToSearch
         );
     }
 
     public Reply replyGetSong() {
         return Reply.of(
-                sendMessageService::sendMessageWithSongById,
+                (abilityBot, upd) -> telegramSendMessageService.sendAllMessages(
+                        abilityBot,
+                        upd,
+                        () -> messageService.searchSongByIdMessages(getChatId(upd), upd.getCallbackQuery().getData())),
+
                 Flag.CALLBACK_QUERY,
                 this::isGetSong);
     }
@@ -85,11 +94,5 @@ public class ChordsBot extends AbilityBot {
 
     private boolean isGetSong(Update upd) {
         return upd.getCallbackQuery().getData().startsWith(Constants.GET_SONG_COMMAND);
-    }
-
-
-    public boolean readyToSearch(Update upd) {
-        Long chatId = getChatId(upd);
-        return !chatStates.chatIsActive(chatId) || chatStates.getChatState(chatId) == AWAITING_SEARCH_REQUEST;
     }
 }
